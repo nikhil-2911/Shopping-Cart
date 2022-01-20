@@ -11,11 +11,58 @@ const Cart = () => {
   } = CartState();
 
   const [total, setTotal] = useState(0);
+  const loadScript = (src) => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = src;
+
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+  const displayRazorPay = async (amount) => {
+    const res = await loadScript(
+      "https://checkout.razorpay.com/v1/checkout.js"
+    );
+    if (!res) {
+      alert("Faild to load Razorpay SDK");
+      return;
+    }
+    const options = {
+      key: "rzp_test_xmuQqNoI8E5CuM",
+      currency: "INR",
+      amount: amount * 100,
+      name: "payMENT",
+      description: "Thanks for making payment using RazorPay",
+      handler: function (response) {
+        alert(response.razorpay_payment_id);
+        alert("Payment is successfull");
+      },
+      prefill: {
+        name: "RazorPay",
+      },
+    };
+
+    const paymentObject = new window.Razorpay(options);
+    paymentObject.open();
+  };
+
+  const makePayment = (e) => {
+    e.preventDefault();
+    displayRazorPay(total);
+  };
+
   useEffect(() => {
     let sum = 0;
     cart.map((product) => (sum += Number(product.price * product.qty)));
     setTotal(sum);
   }, [cart]);
+
   return (
     <>
       <div className="home">
@@ -84,7 +131,11 @@ const Cart = () => {
           <span style={{ fontWeight: 700, fontSize: 20, display: "block" }}>
             Total : ₹{total}
           </span>
-          <Button type="button" disabled={cart.length === 0}>
+          <Button
+            onClick={makePayment}
+            type="button"
+            disabled={cart.length === 0}
+          >
             Proceed to Checkout
           </Button>
         </div>
